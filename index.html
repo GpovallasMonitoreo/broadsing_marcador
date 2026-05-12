@@ -3,55 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoVallas Live Scoreboard - Responsivo</title>
+    <title>EcoVallas Live Scoreboard</title>
     <style>
-        /* Reseteo y Pantalla Completa */
+        /* CSS Compatible con motores web antiguos (Perion / Broadsign) */
         html, body {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
             background-color: #000;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         .main-container {
-            width: 100%;
-            height: 100%; /* Se adapta al 100% de la pantalla */
+            position: relative;
+            width: 100vw;
+            height: 28.125vw; /* Proporción exacta 1440x405 */
             background-image: url('https://jxwdncxtnhmrufvdxuti.supabase.co/storage/v1/object/public/banners-publicos/2ESTADIO%201440X405.jpg');
             background-size: cover;
             background-position: center;
-            position: relative;
+            box-shadow: 0 1vw 3vw rgba(0,0,0,0.5);
+            overflow: hidden;
         }
 
-        /* Modal Responsivo */
         #live-scoreboard {
             position: absolute;
-            top: 5%;
-            right: 5%;
-            width: 25%; /* Ocupa el 25% del ancho de la pantalla */
-            min-width: 260px; /* Evita que sea muy pequeño en celulares */
-            max-width: 500px; /* Evita que sea gigante en pantallas ultrawide */
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 15px;
-            padding: 2%;
+            /* AJUSTE DE POSICIÓN */
+            top: 15%; /* Antes 7%, ahora más abajo */
+            right: 10.5%; /* Antes 3%, ahora más a la izquierda */
+            width: 28%;
+            min-height: 60%;
+            height: auto; /* Permite que crezca si el texto baja de línea */
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            border: 0.1vw solid rgba(255, 255, 255, 0.2);
+            border-radius: 1vw;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: space-evenly;
             align-items: center;
-            gap: 15px;
+            padding: 2% 1%; /* Un poco más de padding vertical */
             color: white;
             box-sizing: border-box;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            gap: 1.5vw; /* Espacio interno para que no se apriete si crece */
         }
 
-        /* Tipografía Fluida con clamp() para que se adapte sin romperse */
         .league-title {
-            font-size: clamp(12px, 1.2vw, 24px);
-            letter-spacing: 2px;
+            font-size: 1.1vw;
+            letter-spacing: 0.1vw;
             color: #ffb380;
             text-transform: uppercase;
             font-weight: bold;
@@ -62,46 +65,54 @@
             display: flex;
             width: 100%;
             justify-content: space-between;
-            align-items: center;
+            align-items: center; /* Centra los elementos verticalmente */
         }
 
         .team {
             flex: 1;
             text-align: center;
-            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .team-name { 
-            font-size: clamp(16px, 1.8vw, 36px);
-            font-weight: 500; 
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 1.2vw; /* Ligeramente más pequeño para fluir mejor */
+            font-weight: bold; 
+            text-align: center;
+            /* AJUSTE PARA NOMBRES LARGOS */
+            white-space: normal; /* Permite saltos de línea */
+            word-wrap: break-word; /* Rompe palabras si son excesivamente largas */
+            max-width: 95%;
+            line-height: 1.2; /* Espaciado entre líneas para que se lea claro */
+            padding: 0 0.5vw;
         }
 
         .score-box {
-            font-size: clamp(32px, 4vw, 72px);
+            font-size: 3.5vw;
             font-weight: 800;
-            padding: 0 10px;
+            padding: 0 2%;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 1vw;
         }
 
         .status-badge {
             background: #ff4d4d;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: clamp(10px, 1vw, 18px);
+            padding: 0.5vw 1.5vw;
+            border-radius: 2vw;
+            font-size: 1vw;
             font-weight: bold;
-            text-align: center;
+            text-transform: uppercase;
+            margin-top: 0.5vw;
         }
     </style>
 </head>
 <body>
 
-<div class="main-container" id="mainContainer">
+<div class="main-container">
     <div id="live-scoreboard">
         <div class="league-title" id="league">Buscando...</div>
         
@@ -126,135 +137,74 @@
 </div>
 
 <script>
-    const API_KEY = '690e36f75b6ecdb00b829f1ff7db1bb2';
-    const SPORTSDATA_REPLAY_KEY = 'c205613ba4364c6ea4ff21383902fcf6';
-    
-    // --- Lógica de APIs (Mismo funcionamiento, sin escudos) ---
+    const API_KEY = '972b42bfcf912a257efafab42af22117';
+    const HEADERS = {
+        "x-rapidapi-key": API_KEY,
+        "x-rapidapi-host": "v3.football.api-sports.io"
+    };
 
-    async function fetchAPIFootball() {
+    async function fetchPartido() {
         try {
-            const response = await fetch(`https://v3.football.api-sports.io/fixtures?live=all`, {
-                method: "GET",
-                headers: {
-                    "x-rapidapi-key": API_KEY,
-                    "x-rapidapi-host": "v3.football.api-sports.io"
-                }
-            });
+            // INTENTO 1: Buscar partidos en vivo
+            let response = await fetch(`https://v3.football.api-sports.io/fixtures?live=all`, { method: "GET", headers: HEADERS });
+            let data = await response.json();
+            let match = null;
+            let isLive = false;
 
-            const data = await response.json();
             if (data.response && data.response.length > 0) {
-                return data.response[0];
-            }
-            return null;
-        } catch (error) {
-            return null;
-        }
-    }
-
-    async function getReplayTime() {
-        try {
-            const response = await fetch(`https://replay.sportsdata.io/api/metadata?key=${SPORTSDATA_REPLAY_KEY}`);
-            const data = await response.json();
-            return data.CurrentTime; 
-        } catch (error) {
-            return null;
-        }
-    }
-
-    async function fetchSportsDataIO() {
-        try {
-            const replayTimeStr = await getReplayTime();
-            if (!replayTimeStr) return null;
-
-            const replayDate = replayTimeStr.split('T')[0];
-            const url = `https://replay.sportsdata.io/api/v3/soccer/scores/json/GamesByDate/${replayDate}?key=${SPORTSDATA_REPLAY_KEY}`;
-            const response = await fetch(url);
-            const games = await response.json();
-            
-            if (games && games.length > 0) {
-                const liveGame = games.find(game => 
-                    game.Status === 'InProgress' || 
-                    game.Status === 'Live' ||
-                    game.Period > 0
-                ) || games[0]; 
+                match = data.response[0];
+                isLive = true;
+            } else {
+                // INTENTO 2 (FALLBACK): Si no hay en vivo, buscar el último partido terminado
+                let fallbackResponse = await fetch(`https://v3.football.api-sports.io/fixtures?last=1`, { method: "GET", headers: HEADERS });
+                let fallbackData = await fallbackResponse.json();
                 
-                return {
-                    teams: {
-                        home: { name: liveGame.HomeTeamName || 'Local' },
-                        away: { name: liveGame.AwayTeamName || 'Visitante' }
-                    },
-                    goals: {
-                        home: liveGame.HomeTeamScore || 0,
-                        away: liveGame.AwayTeamScore || 0
-                    },
-                    league: { name: 'EPL REPLAY' },
-                    fixture: {
-                        status: { elapsed: liveGame.Clock || liveGame.Minute || 'LIVE' }
-                    }
-                };
+                if (fallbackData.response && fallbackData.response.length > 0) {
+                    match = fallbackData.response[0];
+                    isLive = false;
+                }
             }
-            return null;
+
+            // Si se encontró algún partido (en vivo o finalizado) se muestra
+            if (match) {
+                document.getElementById('name-home').innerText = match.teams.home.name;
+                document.getElementById('name-away').innerText = match.teams.away.name;
+                document.getElementById('score-home').innerText = match.goals.home ?? 0;
+                document.getElementById('score-away').innerText = match.goals.away ?? 0;
+                document.getElementById('league').innerText = match.league.name;
+
+                const timeBadge = document.getElementById('match-time');
+                if (isLive) {
+                    timeBadge.innerText = `${match.fixture.status.elapsed}' LIVE`;
+                    timeBadge.style.background = "#ff4d4d"; // Rojo para en vivo
+                } else {
+                    timeBadge.innerText = "FINALIZADO";
+                    timeBadge.style.background = "#555555"; // Gris para terminado
+                }
+            } else {
+                mostrarError("SIN PARTIDOS");
+            }
         } catch (error) {
-            return null;
+            console.error("Error en API:", error);
+            mostrarError("ERROR DE RED");
         }
     }
 
-    // --- Controlador Principal ---
-    async function fetchPartidoEnVivo() {
-        const match1 = await fetchAPIFootball();
-        if (match1) {
-            actualizarMarcador(match1);
-            return;
-        }
-        
-        const match2 = await fetchSportsDataIO();
-        if (match2) {
-            actualizarMarcador(match2);
-            return;
-        }
-        
-        // Partido de respaldo si no hay nada en vivo
-        mostrarPartidoDePrueba();
+    function mostrarError(mensaje) {
+        document.getElementById('league').innerText = mensaje;
+        document.getElementById('match-time').innerText = "ESPERANDO...";
+        document.getElementById('match-time').style.background = "#555555";
+        document.getElementById('name-home').innerText = "---";
+        document.getElementById('name-away').innerText = "---";
+        document.getElementById('score-home').innerText = "0";
+        document.getElementById('score-away').innerText = "0";
     }
 
-    // --- Actualización de la Interfaz ---
-    function actualizarMarcador(match) {
-        document.getElementById('name-home').innerText = match.teams.home.name;
-        document.getElementById('name-away').innerText = match.teams.away.name;
-        document.getElementById('score-home').innerText = match.goals.home ?? 0;
-        document.getElementById('score-away').innerText = match.goals.away ?? 0;
-        document.getElementById('league').innerText = match.league.name;
-        document.getElementById('match-time').innerText = `${match.fixture.status.elapsed}'`;
-    }
-
-    // --- Mock Data ---
-    function mostrarPartidoDePrueba() {
-        const mockMatch = {
-            teams: {
-                home: { name: "América" },
-                away: { name: "Cruz Azul" }
-            },
-            goals: {
-                home: 2,
-                away: 1
-            },
-            league: {
-                name: 'LIGA MX (TEST)'
-            },
-            fixture: {
-                status: { elapsed: '75' }
-            }
-        };
-        actualizarMarcador(mockMatch);
-    }
-
-    // Inicializar
-    function iniciarMarcador() {
-        fetchPartidoEnVivo();
-        setInterval(fetchPartidoEnVivo, 120000); // Actualiza cada 2 minutos
-    }
-
-    document.addEventListener('DOMContentLoaded', iniciarMarcador);
+    // Ejecución compatible con Perion/Broadsign
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchPartido();
+        setInterval(fetchPartido, 120000); // Actualiza cada 2 minutos
+    });
 </script>
 
 </body>
